@@ -26,8 +26,7 @@ function New-PSInteractiveMenuOption {
         $normalizedHotKey = $HotKey.Substring(0, 1).ToUpperInvariant()
     }
 
-    return [PSCustomObject]@{
-        PSTypeName = 'PSInteractiveMenu.Option'
+    return New-PSInteractiveMenuTypedObject -TypeName 'PSInteractiveMenu.Option' -Properties ([ordered]@{
         Key = $Key
         Label = $Label
         Description = $Description
@@ -36,6 +35,5 @@ function New-PSInteractiveMenuOption {
         IsDefault = [bool]$IsDefault
         IsEnabled = [bool]$IsEnabled
         Selected = [bool]$Selected
-    }
+    })
 }
-

@@ -1,3 +1,36 @@
+function New-PSInteractiveMenuTypedObject {
+    [CmdletBinding()]
+    [OutputType([System.Object])]
+    param(
+        [Parameter(Mandatory)]
+        [string]$TypeName,
+
+        [Parameter(Mandatory)]
+        [System.Collections.IDictionary]$Properties
+    )
+
+    $object = [PSCustomObject]$Properties
+    $object.PSObject.TypeNames.Insert(0, $TypeName)
+    return $object
+}
+
+function Assert-PSInteractiveMenuConsoleSupport {
+    [CmdletBinding()]
+    param()
+
+    try {
+        $null = [System.Console]::WindowWidth
+        $null = [System.Console]::WindowHeight
+    }
+    catch {
+        throw 'PSInteractiveMenu requires an interactive console with System.Console support.'
+    }
+
+    if ([System.Console]::IsInputRedirected -or [System.Console]::IsOutputRedirected) {
+        throw 'PSInteractiveMenu requires direct keyboard and screen access and cannot run with redirected console input or output.'
+    }
+}
+
 function ConvertTo-PSInteractiveMenuText {
     [CmdletBinding()]
     [OutputType([System.String])]
@@ -75,10 +108,10 @@ function Get-PSInteractiveMenuViewport {
         $height = 30
     }
 
-    return [PSCustomObject]@{
+    return New-PSInteractiveMenuTypedObject -TypeName 'PSInteractiveMenu.Viewport' -Properties ([ordered]@{
         Width = $width
         Height = $height
-    }
+    })
 }
 
 function Format-PSInteractiveMenuLine {
@@ -218,17 +251,14 @@ function New-PSInteractiveMenuResultObject {
         [int]$SelectedIndex = -1
     )
 
-    $result = [PSCustomObject]@{
-        PSTypeName = 'PSInteractiveMenu.Result'
+    return New-PSInteractiveMenuTypedObject -TypeName 'PSInteractiveMenu.Result' -Properties ([ordered]@{
         Action = $Action
         Option = $Option
         Value = if ($null -ne $Option -and $Option.PSObject.Properties.Name -contains 'Value') { $Option.Value } else { $null }
         SelectedOptions = @($SelectedOptions)
         SelectedValues = @($SelectedValues)
         SelectedIndex = $SelectedIndex
-    }
-
-    return $result
+    })
 }
 
 function Write-PSInteractiveMenuScreen {
@@ -406,11 +436,11 @@ function Write-PSInteractiveMenuScreen {
         Write-Host ('  ' + (Format-PSInteractiveMenuLine -Text ('Selected items: {0}' -f $selectedCount) -Width $contentWidth))
     }
 
-    return [PSCustomObject]@{
+    return New-PSInteractiveMenuTypedObject -TypeName 'PSInteractiveMenu.Layout' -Properties ([ordered]@{
         PageSize = $pageSize
         PageIndex = $pageIndex
         PageCount = $pageCount
-    }
+    })
 }
 
 function Show-PSInteractiveMenuCore {
@@ -431,9 +461,7 @@ function Show-PSInteractiveMenuCore {
         [switch]$AllowEmptySelection
     )
 
-    if (-not $Host.Name -or $Host.Name -ne 'ConsoleHost') {
-        throw 'PSInteractiveMenu requires ConsoleHost.'
-    }
+    Assert-PSInteractiveMenuConsoleSupport
 
     $menuOptions = @($Options)
     $selectedIndex = Get-PSInteractiveMenuFirstEnabledIndex -Options $menuOptions
@@ -627,6 +655,8 @@ function Read-PSInteractiveMenuTextInputCore {
         [string]$CurrentValue
     )
 
+    Assert-PSInteractiveMenuConsoleSupport
+
     $viewport = Get-PSInteractiveMenuViewport
     $contentWidth = [Math]::Max(20, $viewport.Width - 4)
 
@@ -667,17 +697,14 @@ function Read-PSInteractiveMenuTextInputCore {
     Write-Host ''
     $inputValue = Read-Host $Prompt
     if ([string]::IsNullOrWhiteSpace($inputValue)) {
-        return [PSCustomObject]@{
-            PSTypeName = 'PSInteractiveMenu.TextInputResult'
+        return New-PSInteractiveMenuTypedObject -TypeName 'PSInteractiveMenu.TextInputResult' -Properties ([ordered]@{
             Action = 'Back'
             Value = $null
-        }
+        })
     }
 
-    return [PSCustomObject]@{
-        PSTypeName = 'PSInteractiveMenu.TextInputResult'
+    return New-PSInteractiveMenuTypedObject -TypeName 'PSInteractiveMenu.TextInputResult' -Properties ([ordered]@{
         Action = 'Submit'
         Value = $inputValue.Trim()
-    }
+    })
 }
-

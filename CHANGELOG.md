@@ -15,9 +15,10 @@
 
 ### Changed
 
-- No changes
+- Improved the interactive host detection so the menu engine can run in supported terminals beyond `ConsoleHost`
+- Changed menu option, layout, and result payloads to use real PowerShell type names
 
 ### Fixed
 
-- No changes
-
+- Fixed README examples to match the actual public parameter usage
+- Added broader test coverage for aliases, hotkey normalization, and typed option objects
